@@ -1,4 +1,4 @@
-# Script to find all tags ending with _TM in [default]GreenMeadows_Tags folder
+# Script to find all tags ending with _TM
 # and update their engHigh to 3600 and engLow to 0
 
 # Define the tag path to search

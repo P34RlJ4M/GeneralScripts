@@ -10,6 +10,5 @@ def generate_popup_id(length=8):
 
     return popup_id
 
-
 if __name__ == "__main__":
     generate_popup_id()

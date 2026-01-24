@@ -2,7 +2,7 @@
 # Run this in the Script Console in Ignition Designer
 # THE RIGHT COMBINATION FOR THE DATASOURCE AND DBTYPE WILL NEED TO BE FOUND. DBTYPE IS USUALLY THE REALTIME/HISTORICAL TAG PROVIDER
 
-print "=== Power Chart History Provider Path Generator ==="
+print "=== History Provider Path Generator ==="
 print ""
 
 # Configuration

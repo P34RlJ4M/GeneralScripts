@@ -7,8 +7,8 @@ print ""
 
 # Configuration
 historyProvider = "TAGHISTORIAN"
-tagProvider = "schaendorf"
-gatewayName = "schaendorf"
+tagProvider = "default"
+gatewayName = "green_meadows"
 
 # Generate the path
 path = "histprov:%s:/drv:%s:%s:/" % (historyProvider, gatewayName, tagProvider)

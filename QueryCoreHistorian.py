@@ -1,6 +1,6 @@
 import system
 
-logger = system.util.getLogger("HistoryExport")
+logger = system.util.getLogger("RawHistoryExport")
 
 # ============================================================
 # CONFIG
@@ -11,28 +11,42 @@ end_date   = system.date.parse("2026-03-31 23:59:00", "yyyy-MM-dd HH:mm:ss")
 output_path = r"C:\myExports\myExport.csv"
 
 paths = [
-    "[default]Quadrogen/READ_QUAD_PLC_REAL/Inlet Flowmeter - Total Flow",
-    "[default]Gas Analyzers/Raw Gas/Raw GC BTU/Scaled_Value",
-    "[default]Gas Analyzers/Raw Gas/Raw GC CH4/Scaled_Value",
-    "[default]Quadrogen/READ_QUAD_PLC_REAL/Product Gas Flow",
-    "[default]Gas Analyzers/GC_BTU",
-    "[default]Gas Analyzers/GC_CH4",
-    "[default]PEI Flare/Analogs/FLARE_GHS_FLOW_RATE",
-    "[default]Injection Site/INJ_REAL_DATA/KM_BTU_MB",
-    "[default]Injection Site/INJ_REAL_DATA/KM_CH4_MB",
-    "[default]Injection Site/INJ_REAL_DATA/KM_INJ_FLOW_MB",
-    "[default]Injection Site/KM_INJ_VOL_MMBTU_LT"
+    "histprov:Historian:/sys:ignition-scada-1:/prov:default:/tag:Quadrogen/READ_QUAD_PLC_REAL/Inlet Flowmeter - Total Flow",
+    "histprov:Historian:/sys:ignition-scada-1:/prov:default:/tag:Gas Analyzers/Raw Gas/Raw GC BTU/Scaled_Value",
+    "histprov:Historian:/sys:ignition-scada-1:/prov:default:/tag:Gas Analyzers/Raw Gas/Raw GC CH4/Scaled_Value",
+    "histprov:Historian:/sys:ignition-scada-1:/prov:default:/tag:Quadrogen/READ_QUAD_PLC_REAL/Product Gas Flow",
+    "histprov:Historian:/sys:ignition-scada-1:/prov:default:/tag:Gas Analyzers/GC_BTU",
+    "histprov:Historian:/sys:ignition-scada-1:/prov:default:/tag:Gas Analyzers/GC_CH4",
+    "histprov:Historian:/sys:ignition-scada-1:/prov:default:/tag:PEI Flare/Analogs/FLARE_GHS_FLOW_RATE",
+    "histprov:Historian:/sys:ignition-scada-1:/prov:default:/tag:Injection Site/INJ_REAL_DATA/KM_BTU_MB",
+    "histprov:Historian:/sys:ignition-scada-1:/prov:default:/tag:Injection Site/INJ_REAL_DATA/KM_CH4_MB",
+    "histprov:Historian:/sys:ignition-scada-1:/prov:default:/tag:Injection Site/INJ_REAL_DATA/KM_INJ_FLOW_MB",
+    "histprov:Historian:/sys:ignition-scada-1:/prov:default:/tag:Injection Site/KM_INJ_VOL_MMBTU_LT"
 ]
 
 # ============================================================
 # SETTINGS
 # ============================================================
-chunk_hours = 24   # adjust (12, 6, etc. if still heavy)
+chunk_hours = 12   # raw data = heavy → keep this small
 first_write = True
 
 current_start = start_date
 
-logger.info("Starting export...")
+logger.info("Starting RAW export in chunks...")
+
+# ============================================================
+# HEADER CLEANER
+# ============================================================
+def clean_header(col_name):
+    if ":/tag:" in col_name:
+        tag_part = col_name.split(":/tag:")[-1]
+        return tag_part.split("/")[-1]
+    return col_name
+
+# ============================================================
+# MAIN LOOP
+# ============================================================
+total_rows = 0
 
 while current_start < end_date:
 
@@ -40,32 +54,53 @@ while current_start < end_date:
     if current_end > end_date:
         current_end = end_date
 
-    logger.info("Querying from %s to %s" % (current_start, current_end))
+    logger.info("Querying: %s → %s" % (current_start, current_end))
 
     try:
-        data = system.tag.queryTagHistory(
+        results = system.historian.queryRawPoints(
             paths=paths,
-            startDate=current_start,
-            endDate=current_end,
-            returnSize=0,                # ← CRITICAL (natural sampling)
-            aggregationMode="Average",
-            returnFormat="Wide"
+            startTime=current_start,
+            endTime=current_end,
+            returnSize=-1  # OK now because chunked
         )
 
-        if data.getRowCount() == 0:
+        row_count = results.rowCount
+        col_count = results.columnCount
+
+        if row_count == 0:
             logger.info("No data in this chunk.")
-        else:
-            csv = system.dataset.toCSV(data, first_write)
+            current_start = current_end
+            continue
 
-            # Append instead of overwrite
-            system.file.writeFile(output_path, csv, not first_write)
-
+        # Build headers ONCE
+        if first_write:
+            headers = [clean_header(results.getColumnName(i)) for i in range(col_count)]
+            header_line = ",".join(headers) + "\n"
+            system.file.writeFile(output_path, header_line, False)
             first_write = False
 
+        # Build rows for THIS chunk only
+        lines = []
+
+        for row in range(row_count):
+            row_data = []
+            for col in range(col_count):
+                val = results.getValueAt(row, col)
+                row_data.append('"' + str(val) + '"')
+            lines.append(",".join(row_data))
+
+        chunk_csv = "\n".join(lines) + "\n"
+
+        # Append chunk
+        system.file.writeFile(output_path, chunk_csv, True)
+
+        total_rows += row_count
+        logger.info("Chunk complete: %s rows" % row_count)
+
     except Exception as e:
-        logger.error("Chunk failed: %s" % str(e))
+        logger.error("Chunk FAILED: %s" % str(e))
 
     current_start = current_end
 
-logger.info("Export complete.")
-system.perspective.print("Export complete.")
+logger.info("Export complete. Total rows: %s" % total_rows)
+system.perspective.print("Export complete. Rows: " + str(total_rows))

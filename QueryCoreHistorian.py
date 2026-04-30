@@ -1,3 +1,22 @@
+# First we start by creating a start and end time that we will be query history for.
+#	endTime = system.date.now()
+#	startTime = system.date.addDays(endTime, -50)
+#
+## Next we call our queryTagHistory function, using the start and end dates as well as a Tag path.
+## The other parameters listed for this function can be altered to fit your need.
+#	data = system.tag.queryTagHistory(paths=["[default]Quadrogen/READ_QUAD_PLC_REAL/Inlet Flowmeter - Total Flow","[default]Gas Analyzers/Raw Gas/Raw GC BTU/Scaled_Value","[default]Gas Analyzers/Raw Gas/Raw GC CH4/Scaled_Value","[default]Quadrogen/READ_QUAD_PLC_REAL/Product Gas Flow","[default]Gas Analyzers/GC_BTU","[default]Gas Analyzers/GC_CH4","[default]PEI Flare/Analogs/FLARE_GHS_FLOW_RATE","[default]Injection Site/INJ_REAL_DATA/KM_BTU_MB","[default]Injection Site/INJ_REAL_DATA/KM_CH4_MB","[default]Injection Site/INJ_REAL_DATA/KM_INJ_FLOW_MB","[default]Injection Site/KM_INJ_VOL_MMBTU_LT"],
+#	startDate=startTime, endDate=endTime, returnSize=72000, aggregationMode="Average", returnFormat='Wide')
+## Turn that history data into a CSV.
+#	csv = system.dataset.toCSV(data)
+#
+## Export that CSV to a specific file path. The r forces it to use the raw path and not require double backslashes.
+#	system.file.writeFile(r"C:\myExports\myExport.csv", csv)
+# Query tag history and export to CSV
+# Button Script
+
+# Query tag history and export to CSV
+# Perspective Button Script
+
 import system
 
 logger = system.util.getLogger("RawHistoryExport")

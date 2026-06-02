@@ -263,3 +263,4 @@ logger.warn("Mismatches      : %d" % stats["mismatches"])
 logger.warn("Missing OPC     : %d" % stats["missingOpcPaths"])
 logger.warn("Errors          : %d" % stats["errors"])
 logger.warn("========================================")
+
